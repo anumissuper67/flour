@@ -1,0 +1,85 @@
+package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
+
+@TeleOp(name = "Mecanum TeleOp", group = "Drive")
+public class MecanumTeleOp extends LinearOpMode {
+
+    private DcMotor leftFront, leftBack, rightFront, rightBack;
+
+    private static final double DEADZONE = 0.05;   // ignores tiny stick drift
+    private static final boolean SQUARE_INPUTS = true; // finer low-speed control
+
+    @Override
+    public void runOpMode() {
+
+        // ---- 1. Pull motors from the configuration file ----
+        leftFront  = hardwareMap.get(DcMotor.class, "leftFront");
+        leftBack   = hardwareMap.get(DcMotor.class, "leftBack");
+        rightFront = hardwareMap.get(DcMotor.class, "rightFront");
+        rightBack  = hardwareMap.get(DcMotor.class, "rightBack");
+
+        // ---- 2. Left motors are mounted mirrored, so reverse them ----
+        leftFront.setDirection(DcMotor.Direction.REVERSE);
+        leftBack.setDirection(DcMotor.Direction.REVERSE);
+        rightFront.setDirection(DcMotor.Direction.FORWARD);
+        rightBack.setDirection(DcMotor.Direction.FORWARD);
+
+        // ---- 3. Stop firmly instead of coasting ----
+        for (DcMotor m : new DcMotor[]{leftFront, leftBack, rightFront, rightBack}) {
+            m.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        }
+
+        telemetry.addLine("Initialized — press PLAY");
+        telemetry.update();
+
+        waitForStart();
+
+        while (opModeIsActive()) {
+
+            // ---- 4. Read the gamepad ----
+            // left_stick_y is NEGATIVE when pushed forward, so flip it
+            double drive  = shape(-gamepad1.left_stick_y);   // forward / back
+            double strafe = shape( gamepad1.left_stick_x);   // sideways
+            double turn   = shape( gamepad1.right_stick_x);  // rotate
+
+            // ---- 5. Optional slow modes (hold a bumper) ----
+            double speed = 1.0;
+            if (gamepad1.right_bumper) speed = 0.60;  // medium
+            if (gamepad1.left_bumper)  speed = 0.30;  // precision
+
+            // ---- 6. Mecanum mixing ----
+            double lf = drive + strafe + turn;
+            double rf = drive - strafe - turn;
+            double lb = drive - strafe + turn;
+            double rb = drive + strafe - turn;
+
+            // ---- 7. Normalize so nothing exceeds 1.0 (keeps direction correct) ----
+            double max = Math.max(1.0,
+                    Math.max(Math.max(Math.abs(lf), Math.abs(rf)),
+                             Math.max(Math.abs(lb), Math.abs(rb))));
+            lf /= max;  rf /= max;  lb /= max;  rb /= max;
+
+            // ---- 8. Apply power ----
+            leftFront.setPower(lf  * speed);
+            rightFront.setPower(rf * speed);
+            leftBack.setPower(lb   * speed);
+            rightBack.setPower(rb  * speed);
+
+            // ---- 9. Telemetry = your best debugging tool ----
+            telemetry.addData("Drive/Strafe/Turn", "%.2f / %.2f / %.2f", drive, strafe, turn);
+            telemetry.addData("Speed Mode", "%.0f%%", speed * 100);
+            telemetry.addData("LF / RF", "%.2f / %.2f", lf, rf);
+            telemetry.addData("LB / RB", "%.2f / %.2f", lb, rb);
+            telemetry.update();
+        }
+    }
+
+    /** Applies a deadzone, then optionally squares the input for finer slow control. */
+    private double shape(double value) {
+        if (Math.abs(value) < DEADZONE) return 0.0;
+        return SQUARE_INPUTS ? value * Math.abs(value) : value;
+    }
+}
