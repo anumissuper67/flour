@@ -1,0 +1,27 @@
+package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+
+@TeleOp(name = 'ShooterTeleOp')
+public class ShooterTeleOp extends LinearOpMode {
+    private DcMotorEx shooterMotor;
+
+    @Override
+    public void runOpMode() {
+        shooterMotor = hardwareMap.get(DcMotorEx.class, 'shooterMotor');
+        shooterMotor.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+
+        waitForStart();
+
+        while (opModeIsActive()) {
+            // Run shooter flywheel when Right Trigger is pressed
+            if (gamepad1.right_trigger > 0.1) {
+                shooterMotor.setPower(gamepad1.right_trigger);
+            } else {
+                shooterMotor.setPower(0.0);
+            }
+        }
+    }
+}
