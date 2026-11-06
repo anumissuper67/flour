@@ -1,0 +1,54 @@
+package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+
+@TeleOp(name = 'IntakeShooterTeleOp')
+public class IntakeShooterTeleOp extends LinearOpMode {
+    private DcMotorEx intakeMotor;
+    private DcMotorEx shooterMotor;
+
+    @Override
+    public void runOpMode() {
+        // Map DC motors configured on the Robot Controller
+        intakeMotor = hardwareMap.get(DcMotorEx.class, 'intakeMotor');
+        shooterMotor = hardwareMap.get(DcMotorEx.class, 'shooterMotor');
+
+        // Reverse direction if necessary to intake/feed properly
+        intakeMotor.setDirection(DcMotorSimple.Direction.FORWARD);
+        shooterMotor.setDirection(DcMotorSimple.Direction.FORWARD);
+
+        intakeMotor.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
+        shooterMotor.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+
+        telemetry.addData('Status', 'Initialized');
+        telemetry.update();
+
+        waitForStart();
+
+        while (opModeIsActive()) {
+            // Input: Intake balls using the left bumper (intake) or right bumper (reverse)
+            if (gamepad1.left_bumper) {
+                intakeMotor.setPower(1.0);
+            } else if (gamepad1.right_bumper) {
+                intakeMotor.setPower(-1.0);
+            } else {
+                intakeMotor.setPower(0.0);
+            }
+
+            // Output: Shoot balls by spinning the flywheel via the right trigger
+            if (gamepad1.right_trigger > 0.1) {
+                shooterMotor.setPower(gamepad1.right_trigger);
+            } else {
+                shooterMotor.setPower(0.0);
+            }
+
+            telemetry.addData('Intake Power', intakeMotor.getPower());
+            telemetry.addData('Shooter Power', shooterMotor.getPower());
+            telemetry.update();
+        }
+    }
+}
+Rules and Constraints for Intake and Launching Systems
